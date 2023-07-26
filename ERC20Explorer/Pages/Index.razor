@@ -1,0 +1,84 @@
+﻿@page "/{hash}/{rpc}"
+@using Nethereum.Contracts
+@using Nethereum.ABI.FunctionEncoding.Attributes
+@using System.Numerics
+@using Nethereum.BlockchainProcessing.BlockStorage.Entities
+@using Nethereum.Web3
+@using Transaction = Nethereum.RPC.Eth.DTOs.Transaction
+@inject HttpClient Http
+
+@code {
+    [Microsoft.AspNetCore.Components.Parameter] public string hash { get; set; }
+    [Microsoft.AspNetCore.Components.Parameter] public string rpc { get; set; }
+}
+
+<PageTitle>ERC20 Transaction Information</PageTitle>
+
+<h1>Transaction information</h1>
+
+<p>Tx Hash : @hash</p>
+
+@if (information == null)
+{
+    <p>
+        <em>Loading...</em>
+    </p>
+}
+else
+{
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Tx Hash</th>
+            <th>Token Contract</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Token Amount</th>
+            <th>Transaction Transfer Value</th>
+            <th>Raw ABI Data</th>
+        </tr>
+        </thead>
+        <tbody>
+             <tr>
+                <td>@information.Item1.TransactionHash.Truncate(10)</td>
+                <td>@information.Item1.To</td>
+                <td>@information.Item1.From</td>
+                 <td>@information.Item2.To</td>
+                 <td>@information.Item2.TokenAmount</td>
+                 <td>@information.Item1.Value</td>
+                 <td>@information.Item1.Input.Truncate(10)</td>
+            </tr>
+        </tbody>
+    </table>
+}
+
+@code {
+    private Tuple<Transaction, TransferFunction>? information;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var web3 = new Web3( System.Text.Encoding.UTF8.GetString( Convert.FromBase64String(rpc))  );
+
+        var transaction = await web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync("0xec5749111b3b9d32715ad003c035702c097315712b280bbaf13c499e2f24df0c");
+        var transfer  = new TransferFunction();
+        if (transaction.IsTransactionForFunctionMessage<TransferFunction>())
+        {
+             transfer = new TransferFunction().DecodeTransaction(transaction);
+            Console.WriteLine(transfer.TokenAmount);
+        }
+
+        information = new Tuple<Nethereum.RPC.Eth.DTOs.Transaction, TransferFunction>(transaction, transfer);
+    }
+    
+    [Function("transfer", "bool")]
+    class TransferFunction : FunctionMessage
+    {
+        [Nethereum.ABI.FunctionEncoding.Attributes.Parameter("address", "_to", 1)]
+        public string To { get; set; }
+
+        [Nethereum.ABI.FunctionEncoding.Attributes.Parameter("uint256", "_value", 2)]
+        public BigInteger TokenAmount { get; set; }
+    }
+
+
+}
