@@ -59,7 +59,7 @@ else
     {
         var web3 = new Web3( System.Text.Encoding.UTF8.GetString( Convert.FromBase64String(rpc))  );
 
-        var transaction = await web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync("0xec5749111b3b9d32715ad003c035702c097315712b280bbaf13c499e2f24df0c");
+        var transaction = await web3.Eth.Transactions.GetTransactionByHash.SendRequestAsync(hash);
         var transfer  = new TransferFunction();
         if (transaction.IsTransactionForFunctionMessage<TransferFunction>())
         {
